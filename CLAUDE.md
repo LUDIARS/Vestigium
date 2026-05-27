@@ -16,6 +16,9 @@
 - writer は I/O 失敗で投げない (サービス本体を巻き込まないため)
 - service code は `^[a-z0-9][a-z0-9_-]{0,63}$` (path traversal 防止)
 - JSONL 仕様変更は DESIGN.md §2.2 を更新し、 Concordia 側 reader にも反映
+- **ctx には機微情報 (API key / token / PII / payment / request body の生データ)
+  を入れない**: 任意 JSON を許す仕様だが、 ファイルに as-is で残るため
+  service 側で redact してから渡す責任を持つ. レビュー時にも ctx の中身を確認.
 
 ## 触らないもの
 
