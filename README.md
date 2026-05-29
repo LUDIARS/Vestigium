@@ -45,11 +45,19 @@ await vestigium.shutdown();
 import { createWriter, sweep } from '@ludiars/vestigium';
 
 const w = createWriter({ serviceCode: 'cernere' });
+// SECURITY: ctx は as-is で JSONL に保存される. API key / token / PII
+// (email / user id / 個人情報) / payment 情報 / request body の生データ
+// 等は ctx に絶対に入れない. 必要なら呼び出し側で redact してから渡す.
 w.write({ level: 'info', msg: 'hi', ctx: { trace_id: 'xyz' } });
 await w.close();
 
 sweep({ retentionDays: 7 }); // 強制 sweep
 ```
+
+> [!IMPORTANT]
+> `ctx` には任意 JSON を入れられるが、 ライブラリ側で内容検査・redact は行わない。
+> 機微情報 (API key / token / PII / payment / request body の生データ) は
+> service 側で必ず redact してから渡すこと。
 
 子プロセスの stdout/stderr を流す:
 
