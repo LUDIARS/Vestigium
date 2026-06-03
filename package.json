@@ -23,6 +23,13 @@
     "vestigium": "./dist/cli/vestigium.js"
   },
   "files": ["dist", "src", "DESIGN.md"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LUDIARS/Vestigium.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "prepare": "tsc -p tsconfig.json",
@@ -46,6 +53,5 @@
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
   },
-  "license": "UNLICENSED",
-  "private": true
+  "license": "UNLICENSED"
 }

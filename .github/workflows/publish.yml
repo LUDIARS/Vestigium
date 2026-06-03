@@ -1,0 +1,41 @@
+name: Publish to GitHub Packages
+
+# version タグ (v0.1.0 等) を push したときに @ludiars/vestigium を
+# GitHub Packages (npm.pkg.github.com) へ publish する。
+# 手動公開も可 (workflow_dispatch)。
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://npm.pkg.github.com"
+          scope: "@ludiars"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      # publishConfig.registry で GitHub Packages に向く。
+      # 既に同一 version が publish 済みなら 409 で落ちるので
+      # --no-error-on-already-published 相当の挙動はせず、version を上げて運用する。
+      - name: Publish
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
