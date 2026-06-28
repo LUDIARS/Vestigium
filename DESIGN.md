@@ -52,7 +52,7 @@ Vestigium はこれを反転させる:
   "ts": 1779843000123,            // epoch ms (number)
   "level": "info",                // "trace"|"debug"|"info"|"warn"|"error"|"fatal"
   "service": "cernere",           // 同じ dir 名と一致 (sanity)
-  "channel": "stdout",            // "stdout"|"stderr"|"app" (app = SDK 経由)
+  "channel": "stdout",            // "stdout"|"stderr"|"app"|"llm" (app = SDK 経由, llm = LLM 呼び出し専用)
   "msg": "boot complete",         // メッセージ本文 (改行は \n でエスケープ済み)
   "pid": 12345,                   // 任意
   "ctx": { "req_id": "abc" }     // 任意 (任意 JSON object)
