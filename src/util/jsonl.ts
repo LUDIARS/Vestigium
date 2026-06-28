@@ -5,7 +5,7 @@
 export const LOG_LEVELS = ['trace', 'debug', 'info', 'warn', 'error', 'fatal'] as const;
 export type LogLevel = (typeof LOG_LEVELS)[number];
 
-export const CHANNELS = ['stdout', 'stderr', 'app'] as const;
+export const CHANNELS = ['stdout', 'stderr', 'app', 'llm'] as const;
 export type Channel = (typeof CHANNELS)[number];
 
 export interface LogRecord {
