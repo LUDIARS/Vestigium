@@ -32,7 +32,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "prepare": "tsc -p tsconfig.json",
+    "prepare": "node scripts/prepare.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "dev": "tsx watch src/cli/vestigium.ts"
