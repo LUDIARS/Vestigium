@@ -22,7 +22,11 @@
   "bin": {
     "vestigium": "./dist/cli/vestigium.js"
   },
-  "files": ["dist", "src", "DESIGN.md"],
+  "files": [
+    "dist",
+    "src",
+    "DESIGN.md"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/LUDIARS/Vestigium.git"
@@ -44,14 +48,16 @@
     "pino": "^9.0.0"
   },
   "peerDependenciesMeta": {
-    "pino": { "optional": true }
+    "pino": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "pino": "^9.0.0",
     "tsx": "^4.16.0",
     "typescript": "^5.6.0",
-    "vitest": "^2.1.0"
+    "vitest": "^4.1.9"
   },
   "license": "UNLICENSED"
 }
