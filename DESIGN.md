@@ -70,6 +70,39 @@ Vestigium はこれを反転させる:
 - sweeper は writer の startup 時 1 回 + 1 時間ごと
 - `retentionDays = 0` で sweep 無効 (永続化)
 
+### 2.4 `channel: "llm"` 構造化イベント規約
+
+LLM 呼び出しのコスト・セッション追跡は、 `channel: "llm"` の行の `ctx` に
+以下の予約フィールドを載せて表現する。 monitor 側 (Excubitor) はこの規約を
+解釈してホット参照層 (recent / 当日コスト集計 / セッション一覧) を構築する。
+
+```jsonc
+{
+  "ts": 1779843000123,
+  "level": "info",
+  "service": "cernere",
+  "channel": "llm",
+  "msg": "llm call",                 // 人間向け要約 (自由)
+  "ctx": {
+    "evt": "llm_call",               // "llm_call" | "session_start" | "session_end"
+    "session_id": "s_abc123",        // セッション横断キー (必須)
+    "model": "claude-sonnet-5",     // llm_call のみ
+    "in_tokens": 1200,               // llm_call のみ
+    "out_tokens": 340,               // llm_call のみ
+    "cost_usd": 0.0081,              // llm_call のみ (呼出単価)
+    "latency_ms": 2100               // 任意
+  }
+}
+```
+
+- `evt` が無い `channel: "llm"` 行は従来どおり自由形式 (規約対象外)
+- `ctx` はもともと任意 JSON のため **JSONL スキーマとしては非破壊変更**。
+  reader (Concordia / Excubitor) の parse 層に変更は不要で、 規約の解釈は
+  consumer 側の責務
+- 機微情報ルール (CLAUDE.md) はここでも適用: **prompt / response 本文を
+  ctx に入れない**。 載せるのはメタデータ (トークン数 / コスト / モデル名) のみ
+- SDK は型付き emitter を提供予定 (§3.2): 手書きによるフィールド名の揺れを防ぐ
+
 ## 3. service 側 SDK
 
 ### 3.1 install API (推奨)
@@ -96,6 +129,9 @@ await vestigium.shutdown();    // graceful close
 - `hookConsole({writer})` — global console を hook
 - `redirectChild(child, {serviceCode, channelStdout, channelStderr})` —
   child_process の stdout/stderr を line-by-line に Vestigium へ流す
+- `createLlmEmitter({writer, serviceCode})` — §2.4 規約の型付き emitter (計画,
+  別 PR): `emitter.call({session_id, model, in_tokens, out_tokens, cost_usd})` /
+  `emitter.sessionStart(session_id)` / `emitter.sessionEnd(session_id)`
 
 ### 3.3 spawn 経路 (Concordia が外部 process を spawn する場合)
 
