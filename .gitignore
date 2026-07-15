@@ -4,3 +4,4 @@ dist/
 logs/
 .vitest-tmp/
 .DS_Store
+review/
