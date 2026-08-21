@@ -1,0 +1,20 @@
+{
+  "name": "cli-and-support",
+  "description": "CLI と共有ユーティリティ、 自動テスト。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "^src/cli/(?:.*/)?[^/]+$"
+    },
+    {
+      "pathPattern": "^src/util/(?:.*/)?[^/]+$"
+    },
+    {
+      "pathPattern": "^src/index\\.ts$"
+    },
+    {
+      "pathPattern": "^tests?/(?:.*/)?[^/]+$"
+    }
+  ]
+}

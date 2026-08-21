@@ -1,0 +1,11 @@
+{
+  "name": "log-reading",
+  "description": "ログの読み取り。 収集側が使う走査と整形。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "^src/reader/(?:.*/)?[^/]+$"
+    }
+  ]
+}

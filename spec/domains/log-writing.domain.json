@@ -1,0 +1,14 @@
+{
+  "name": "log-writing",
+  "description": "ログの書き出し。 JSONL への追記とローテーション。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "^src/writer(?:\\.test)?\\.ts$"
+    },
+    {
+      "pathPattern": "^src/rotator(?:\\.test)?\\.ts$"
+    }
+  ]
+}

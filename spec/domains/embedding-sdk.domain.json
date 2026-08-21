@@ -1,0 +1,14 @@
+{
+  "name": "embedding-sdk",
+  "description": "各サービスへ組み込む SDK。 呼び出し口と設定の解決。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "^src/sdk/(?:.*/)?[^/]+$"
+    },
+    {
+      "pathPattern": "^src/config(?:\\.test)?\\.ts$"
+    }
+  ]
+}

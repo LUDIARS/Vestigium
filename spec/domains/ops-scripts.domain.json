@@ -1,0 +1,11 @@
+{
+  "name": "ops-scripts",
+  "description": "運用スクリプト。 準備・検証の補助で、 ライブラリ本体の責務は持たない。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    {
+      "pathPattern": "^scripts/(?:.*/)?[^/]+$"
+    }
+  ]
+}
