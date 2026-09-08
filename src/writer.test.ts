@@ -74,3 +74,67 @@ describe('writer', () => {
     expect(fs.existsSync(path.join(serviceDir(logsDir, 'svc-a'), `${ymdUtc(new Date())}.jsonl`))).toBe(true);
   });
 });
+
+describe('writer: 書き込み失敗でサービスを落とさない', () => {
+  it("stream の 'error' で uncaught exception にしない", async () => {
+    // WriteStream の失敗は同期例外ではなく 'error' イベントで来る。 ハンドラが無いと
+    // Node は uncaught exception にしてプロセスを落とす — write() を try で囲んでも
+    // 守れない。 Windows では他プロセスが同じ日付ファイルを掴むと EPERM になり、
+    // 並行する委託が着手前に死んでいた (Memoria #2030)。
+    //
+    // 再現: 出力先の *ファイル名* をディレクトリにしておく。 serviceDir の mkdir は
+    // 通り、 createWriteStream が EISDIR を 'error' で投げる。
+    const logsDir = makeDir();
+    const writer = createWriter({ serviceCode: 'test-svc', logsDir });
+    const file = writer.currentFile();
+    await writer.close();
+    fs.rmSync(file, { force: true });
+    fs.mkdirSync(file, { recursive: true });
+
+    const uncaught: unknown[] = [];
+    const onUncaught = (err: unknown) => { uncaught.push(err); };
+    process.on('uncaughtException', onUncaught);
+    try {
+      const blocked = createWriter({ serviceCode: 'test-svc', logsDir });
+      expect(() => blocked.write({ msg: 'dropped' })).not.toThrow();
+      // 'error' は非同期に届く。 イベントループを 1 周させてから確かめる。
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(uncaught).toEqual([]);
+      await blocked.close();
+    } finally {
+      process.off('uncaughtException', onUncaught);
+    }
+  });
+
+  it('出力先が開けなくても write / close が投げない', async () => {
+    // ログが取れないことと、 サービスが動かないことは別 (module header の方針)。
+    const base = makeDir();
+    const logsDir = path.join(base, 'occupied');
+    fs.writeFileSync(logsDir, 'not a directory', 'utf8');
+
+    const writer = createWriter({ serviceCode: 'test-svc', logsDir });
+    expect(() => writer.write({ msg: 'dropped' })).not.toThrow();
+    await expect(writer.close()).resolves.toBeUndefined();
+  });
+
+  it('出力先が復旧したら次の write で書き直す', async () => {
+    // 「次の write で再試行する」が本 PR の要件。 開けない状態で write しても
+    // 終了済み stream を残さず、 復旧後の write が実際に file へ届くことを見る。
+    const base = makeDir();
+    const logsDir = path.join(base, 'occupied');
+    fs.writeFileSync(logsDir, 'not a directory', 'utf8');
+
+    const writer = createWriter({ serviceCode: 'test-svc', logsDir });
+    expect(() => writer.write({ msg: 'dropped' })).not.toThrow();
+
+    // 障害を取り除く — 以降は普通に開けるはず。
+    fs.rmSync(logsDir, { force: true });
+    expect(() => writer.write({ msg: 'recovered' })).not.toThrow();
+    await writer.close();
+
+    const file = dayFile(logsDir, 'test-svc');
+    expect(fs.existsSync(file)).toBe(true);
+    const lines = fs.readFileSync(file, 'utf8').trim().split('\n');
+    expect(lines.map((l) => parse(l)?.msg)).toEqual(['recovered']);
+  });
+});

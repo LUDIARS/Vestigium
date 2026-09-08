@@ -3,12 +3,13 @@
   "description": "ログの書き出し。 JSONL への追記とローテーション。",
   "presetRules": [],
   "templateRules": [],
+  "specRefs": ["DESIGN.md"],
   "membership": [
     {
-      "pathPattern": "^src/writer(?:\\.test)?\\.ts$"
+      "pathPattern": "(^|/)src/writer(?:-error)?(?:\\.test)?\\.ts$"
     },
     {
-      "pathPattern": "^src/rotator(?:\\.test)?\\.ts$"
+      "pathPattern": "(^|/)src/rotator(?:\\.test)?\\.ts$"
     }
   ]
 }
