@@ -52,13 +52,19 @@ export function createWriter(opts: WriterOptions): Writer {
   let closed = false;
   const errors = new WriteErrorReporter();
   let stream: fs.WriteStream | null = null;
+  // close() が teardown を担当している stream。 'error' handler がこれを
+  // destroy して flush を中断しないようにするための印。
+  let closing: fs.WriteStream | null = null;
 
   function open(now: Date): fs.WriteStream {
     const opened = openStream(logsDir, serviceCode, now, (err) => {
       errors.report(err);
       // ローテーション後に旧streamのerrorが届いても新streamは失わない。
       if (stream === opened) stream = null;
-      opened.destroy();
+      // close() が握っている stream は destroy しない。 end() の flush 中に
+      // destroy すると未書き出しの行を捨てたまま close() が resolve し、
+      // 呼び出し側 (index.ts の shutdown) が flush 済みと誤認する。
+      if (closing !== opened) opened.destroy();
     });
     return opened;
   }
@@ -121,26 +127,31 @@ export function createWriter(opts: WriterOptions): Writer {
     async close() {
       if (closed) return;
       closed = true;
-      const closing = stream;
+      const target = stream;
       stream = null;
-      if (!closing || closing.closed) return;
-      await new Promise<void>((resolve) => {
-        const done = (): void => {
-          closing.off('finish', done);
-          closing.off('close', done);
-          closing.off('error', done);
-          resolve();
-        };
-        // 開けないstreamはfinishに到達しないため、error/closeでも完了する。
-        closing.once('finish', done);
-        closing.once('close', done);
-        closing.once('error', done);
-        try { closing.end(); } catch (err) {
-          errors.report(err as Error);
-          closing.destroy();
-          done();
-        }
-      });
+      if (!target || target.closed) return;
+      closing = target;
+      try {
+        await new Promise<void>((resolve) => {
+          const done = (): void => {
+            target.off('finish', done);
+            target.off('close', done);
+            target.off('error', done);
+            resolve();
+          };
+          // 開けないstreamはfinishに到達しないため、error/closeでも完了する。
+          target.once('finish', done);
+          target.once('close', done);
+          target.once('error', done);
+          try { target.end(); } catch (err) {
+            errors.report(err as Error);
+            target.destroy();
+            done();
+          }
+        });
+      } finally {
+        closing = null;
+      }
     },
   };
 }
