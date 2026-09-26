@@ -142,6 +142,12 @@ spawn される側 (Node) は起動時に `install()` を呼ぶだけで file �
 spawn される側が install を呼んでいない場合の fallback として、 Concordia 側で
 `redirectChild()` を使って外側から JSONL を書く (移行期の互換)。
 
+### 3.4 writer の終了境界
+
+日付切替で退役した出力先も、ファイルを閉じるまで writer が所有する。`close()` は新規書込みを止め、現在と退役済みの全 stream の書込み・file handle の終了を待つ。並行した `close()` も同じ終了を待ち、後発呼出しだけを先に完了させない。I/O 失敗は従来どおり警告に留め、失敗した stream の close も回収する。JSONL の形式と日付選択は変更しない。
+
+Actio #2033 の登録テストでは、旧日 stream が開く前に最新日の終了だけが完了し、旧日のログが検証時点で欠落した。回帰テストは旧日の open を明示的に保留し、最新日の close 後も writer.close が待機することを検証する。
+
 ## 4. monitor (Concordia 側改修)
 
 ### 4.1 file-tail bridge (新規)

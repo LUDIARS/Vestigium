@@ -6,6 +6,7 @@
  * - 失敗は process.stderr に warning を出すだけで投げない (サービス本体を落とさない)
  */
 
+// @spec writer の終了境界
 import fs from 'node:fs';
 import { WriteErrorReporter } from './writer-error.js';
 import { dayFile, serviceDir, ymdUtc, resolveLogsDir } from './util/paths.js';
@@ -52,9 +53,10 @@ export function createWriter(opts: WriterOptions): Writer {
   let closed = false;
   const errors = new WriteErrorReporter();
   let stream: fs.WriteStream | null = null;
-  // close() が teardown を担当している stream。 'error' handler がこれを
-  // destroy して flush を中断しないようにするための印。
-  let closing: fs.WriteStream | null = null;
+  // Keep ownership until handles close, including streams retired by rotation.
+  const streams = new Set<fs.WriteStream>();
+  const closing = new Map<fs.WriteStream, Promise<void>>();
+  let closePromise: Promise<void> | null = null;
 
   function open(now: Date): fs.WriteStream {
     const opened = openStream(logsDir, serviceCode, now, (err) => {
@@ -64,8 +66,10 @@ export function createWriter(opts: WriterOptions): Writer {
       // close() が握っている stream は destroy しない。 end() の flush 中に
       // destroy すると未書き出しの行を捨てたまま close() が resolve し、
       // 呼び出し側 (index.ts の shutdown) が flush 済みと誤認する。
-      if (closing !== opened) opened.destroy();
+      if (!closing.has(opened)) opened.destroy();
     });
+    streams.add(opened);
+    opened.once('close', () => streams.delete(opened));
     return opened;
   }
 
@@ -78,10 +82,32 @@ export function createWriter(opts: WriterOptions): Writer {
     errors.report(err as Error);
   }
 
+  function retire(target: fs.WriteStream): Promise<void> {
+    const pending = closing.get(target);
+    if (pending) return pending;
+    if (target.closed) return Promise.resolve();
+    let complete!: () => void;
+    const ended = new Promise<void>(resolve => { complete = resolve; });
+    closing.set(target, ended);
+    target.once('close', () => {
+      closing.delete(target);
+      complete();
+    });
+    // Native WriteStream auto-closes on finish/error. Wait for the handle,
+    // not merely the last write or finish event, before releasing ownership.
+    if (!target.destroyed && !target.writableEnded) {
+      try { target.end(); } catch (err) {
+        errors.report(err as Error);
+        target.destroy();
+      }
+    }
+    return ended;
+  }
+
   function ensureCurrent(now: Date): fs.WriteStream {
     const ymd = ymdUtc(now);
     if (ymd !== currentYmd || stream === null) {
-      try { stream?.end(); } catch { /* noop */ }
+      if (stream) void retire(stream);
       // open が投げても終了済み stream を残さない。 残すと以降の write が
       // ERR_STREAM_WRITE_AFTER_END を出し続け、 開き直しに入れなくなる。
       stream = null;
@@ -124,34 +150,12 @@ export function createWriter(opts: WriterOptions): Writer {
       // WriteStream は flush API がない (drain で代用)。 ここでは noop。
       // close 時にバッファは flush される。
     },
-    async close() {
-      if (closed) return;
+    close() {
+      if (closePromise) return closePromise;
       closed = true;
-      const target = stream;
       stream = null;
-      if (!target || target.closed) return;
-      closing = target;
-      try {
-        await new Promise<void>((resolve) => {
-          const done = (): void => {
-            target.off('finish', done);
-            target.off('close', done);
-            target.off('error', done);
-            resolve();
-          };
-          // 開けないstreamはfinishに到達しないため、error/closeでも完了する。
-          target.once('finish', done);
-          target.once('close', done);
-          target.once('error', done);
-          try { target.end(); } catch (err) {
-            errors.report(err as Error);
-            target.destroy();
-            done();
-          }
-        });
-      } finally {
-        closing = null;
-      }
+      closePromise = Promise.all([...streams].map(retire)).then(() => undefined);
+      return closePromise;
     },
   };
 }

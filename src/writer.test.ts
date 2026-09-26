@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createWriter } from './writer.js';
@@ -136,5 +136,127 @@ describe('writer: 書き込み失敗でサービスを落とさない', () => {
     expect(fs.existsSync(file)).toBe(true);
     const lines = fs.readFileSync(file, 'utf8').trim().split('\n');
     expect(lines.map((l) => parse(l)?.msg)).toEqual(['recovered']);
+  });
+});
+
+
+/** Hold one real file open operation while all other WriteStreams use the real filesystem. */
+function gateFileOpen(fileName: string) {
+  const createStream = fs.createWriteStream;
+  const realOpen = fs.open;
+  const streams: { file: string; stream: fs.WriteStream; closed: Promise<void> }[] = [];
+  let openRequested!: () => void;
+  const requested = new Promise<void>((resolve) => { openRequested = resolve; });
+  let continueOpen: (() => void) | undefined;
+  let released = false;
+  let failure: NodeJS.ErrnoException | undefined;
+  const spy = vi.spyOn(fs, 'createWriteStream').mockImplementation((file, options) => {
+    const gated = path.basename(String(file)) === fileName;
+    const settings = typeof options === 'string' ? { encoding: options } : options;
+    const stream = gated ? createStream(file, {
+      ...settings,
+      fs: {
+        open(target: fs.PathLike, flags: fs.OpenMode, mode: fs.Mode,
+          callback: (error: NodeJS.ErrnoException | null, fd: number) => void): void {
+          continueOpen = () => {
+            if (failure) callback(failure, -1);
+            else realOpen(target, flags, mode, callback);
+          };
+          openRequested();
+          if (released) continueOpen();
+        },
+        write: fs.write,
+        writev: fs.writev,
+        close: fs.close,
+      },
+    }) : createStream(file, options);
+    const closed = new Promise<void>((resolve) => { stream.once('close', resolve); });
+    streams.push({ file: path.basename(String(file)), stream, closed });
+    return stream;
+  });
+  return {
+    requested,
+    streams,
+    release(error?: NodeJS.ErrnoException): void {
+      if (released) return;
+      released = true;
+      failure = error;
+      continueOpen?.();
+    },
+    restore(): void { spy.mockRestore(); },
+  };
+}
+
+function streamFor(gate: ReturnType<typeof gateFileOpen>, file: string) {
+  const entry = gate.streams.filter((item) => item.file === file).at(-1);
+  if (!entry) throw new Error('Expected stream was not created: ' + file);
+  return entry;
+}
+
+function fileMessages(logsDir: string, file: string): string[] {
+  return fs.readFileSync(path.join(serviceDir(logsDir, 'drain-svc'), file), 'utf8')
+    .trim().split('\n').map((line) => parse(line)?.msg ?? 'invalid JSON record');
+}
+
+describe('writer: all owned streams drain before close resolves', () => {
+  it('waits for an old pending open even after the latest stream closes, including repeated close calls', async () => {
+    const logsDir = makeDir();
+    const gate = gateFileOpen('2026-01-01.jsonl');
+    const writer = createWriter({ serviceCode: 'drain-svc', logsDir });
+    try {
+      writer.write({ msg: 'past-first', ts: Date.UTC(2026, 0, 1, 12) });
+      writer.write({ msg: 'past-second', ts: Date.UTC(2026, 0, 1, 13) });
+      writer.write({ msg: 'today', ts: Date.UTC(2026, 0, 2, 12) });
+      const latest = streamFor(gate, '2026-01-02.jsonl');
+      let firstClosed = false;
+      let secondClosed = false;
+      const firstClose = writer.close().then(() => { firstClosed = true; });
+      const secondClose = writer.close().then(() => { secondClosed = true; });
+      // This event barrier proves the newer stream has completed; no timing sleep is involved.
+      await Promise.all([gate.requested, latest.closed]);
+      await Promise.resolve();
+      expect(firstClosed).toBe(false);
+      expect(secondClosed).toBe(false);
+      gate.release();
+      await Promise.all([firstClose, secondClose]);
+      expect(gate.streams.every((entry) => entry.stream.closed)).toBe(true);
+      expect(fileMessages(logsDir, '2026-01-01.jsonl')).toEqual(['past-first', 'past-second']);
+      expect(fileMessages(logsDir, '2026-01-02.jsonl')).toEqual(['today']);
+    } finally {
+      gate.release();
+      try {
+        await writer.close();
+        // Cleanup also drains streams on a regression where writer.close() returned prematurely.
+        await Promise.all(gate.streams.map((entry) => entry.closed));
+      } finally { gate.restore(); }
+    }
+  });
+
+  it('settles a failed retired open without discarding or reopening the healthy current stream', async () => {
+    const logsDir = makeDir();
+    const gate = gateFileOpen('2026-01-01.jsonl');
+    const writer = createWriter({ serviceCode: 'drain-svc', logsDir });
+    try {
+      writer.write({ msg: 'cannot-be-written', ts: Date.UTC(2026, 0, 1, 12) });
+      writer.write({ msg: 'before-old-error', ts: Date.UTC(2026, 0, 2, 12) });
+      const old = streamFor(gate, '2026-01-01.jsonl');
+      const latest = streamFor(gate, '2026-01-02.jsonl');
+      const latestCount = gate.streams.filter((entry) => entry.file === latest.file).length;
+      await gate.requested;
+      gate.release(Object.assign(new Error('controlled retired open failure'), { code: 'EACCES' }));
+      await old.closed;
+      writer.write({ msg: 'after-old-error', ts: Date.UTC(2026, 0, 2, 13) });
+      expect(gate.streams.filter((entry) => entry.file === latest.file)).toHaveLength(latestCount);
+      await Promise.all([writer.close(), writer.close()]);
+      expect(gate.streams.every((entry) => entry.stream.closed)).toBe(true);
+      expect(fileMessages(logsDir, '2026-01-02.jsonl')).toEqual(['before-old-error', 'after-old-error']);
+      expect(fs.existsSync(path.join(serviceDir(logsDir, 'drain-svc'), '2026-01-01.jsonl'))).toBe(false);
+    } finally {
+      gate.release();
+      try {
+        await writer.close();
+        await Promise.all(gate.streams.map((entry) => entry.closed));
+      } finally { gate.restore(); }
+    }
   });
 });
