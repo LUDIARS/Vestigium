@@ -30,6 +30,15 @@
       "module": "cpp/src/reset_checkpoint.contract.hpp",
       "mode": "observe",
       "sample": 1
+    },
+    {
+      "id": "C-4",
+      "criterion": "C-4 formatDiagnostic(diagnostic, epochMs): 診断種別と入力位置の範囲を JSONL に記録し、元の行データを含めない",
+      "symbol": "vestigium::formatDiagnostic",
+      "file": "cpp/src/diagnostics.cpp",
+      "module": "cpp/src/sink_diagnostic.contract.hpp",
+      "mode": "observe",
+      "sample": 1
     }
   ]
 }

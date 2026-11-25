@@ -5,7 +5,6 @@
 #include "vestigium/sources.hpp"
 
 #include <optional>
-#include <ostream>
 #include <stdexcept>
 #include <system_error>
 #include <utility>
@@ -20,11 +19,6 @@ static std::uint64_t resetCheckpoint(const CheckpointStore& store, const std::st
 }, store, key); /* augur-inject:contract-end:6cbddc0a */ }
 
 namespace {
-
-std::ostream& sourceWarning(std::ostream& warnings, const LogSource& source) {
-    const auto path = source.path.u8string();
-    return warnings << "[vestigium-sink] " << std::string{path.begin(), path.end()} << ": ";
-}
 
 class DestinationError : public std::runtime_error {
 public:
@@ -41,7 +35,7 @@ void deliver(const BatchSender& send, std::string body) {
 }
 
 void exportSource(const LogSource& source, const CheckpointStore& checkpoints,
-                  const BatchSender& send, std::ostream& warnings, ExportResult& result) {
+                  const BatchSender& send, const DiagnosticReporter& report, ExportResult& result) {
     std::optional<portus::FileFollower> file;
     std::string key;
     try {
@@ -56,7 +50,7 @@ void exportSource(const LogSource& source, const CheckpointStore& checkpoints,
     for (;;) {
         const auto read = file->read(offset, batchLimit);
         if (read.status == portus::FileFollowStatus::truncated) {
-            sourceWarning(warnings, source) << "file truncated; restarting at byte 0\n";
+            report({"source_truncated", source.path, "file truncated; restarting at byte 0"});
             offset = resetCheckpoint(checkpoints, key);
             continue;
         }
@@ -76,8 +70,8 @@ void exportSource(const LogSource& source, const CheckpointStore& checkpoints,
         deliver(send, std::move(batch.body));
         checkpoints.save(key, next);
         if (batch.invalidRows) {
-            sourceWarning(warnings, source) << "skipped " << batch.invalidRows
-                << " invalid row(s) at bytes " << offset << '-' << next << '\n';
+            report({"invalid_rows", source.path, "skipped invalid rows",
+                SkippedRows{offset, next, batch.invalidRows}});
         }
         result.rows += batch.rows;
         offset = next;
@@ -87,18 +81,18 @@ void exportSource(const LogSource& source, const CheckpointStore& checkpoints,
 }
 
 ExportResult exportLogs(const std::filesystem::path& root, const CheckpointStore& checkpoints,
-                        const BatchSender& send, std::ostream& warnings) {
+                        const BatchSender& send, const DiagnosticReporter& report) {
     ExportResult result;
     for (const auto& source : discoverSources(root)) {
         try {
-            exportSource(source, checkpoints, send, warnings, result);
+            exportSource(source, checkpoints, send, report, result);
         } catch (const DestinationError& error) {
             ++result.failedFiles;
-            sourceWarning(warnings, source) << error.what() << '\n';
+            report({"destination_failed", source.path, error.what()});
             break;
         } catch (const std::exception& error) {
             ++result.failedFiles;
-            sourceWarning(warnings, source) << error.what() << '\n';
+            report({"source_failed", source.path, error.what()});
         }
     }
     return result;

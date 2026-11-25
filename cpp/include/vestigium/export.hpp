@@ -4,7 +4,8 @@
 
 #include <cstddef>
 #include <functional>
-#include <iosfwd>
+#include <optional>
+#include <string_view>
 
 namespace vestigium {
 
@@ -16,8 +17,26 @@ struct ExportResult {
 
 using BatchSender = std::function<void(std::string)>;
 
+// Source bytes represented by a committed batch that contained invalid rows.
+struct SkippedRows {
+    std::uint64_t begin;
+    std::uint64_t end;
+    std::size_t invalidRows;
+};
+
+// Describe a scan problem without retaining the original log payload.
+struct ExportDiagnostic {
+    std::string_view event;
+    std::filesystem::path source;
+    std::string_view message;
+    std::optional<SkippedRows> skipped = {};
+};
+
+// The diagnostic and its string views are valid only for the duration of the callback.
+using DiagnosticReporter = std::function<void(const ExportDiagnostic&)>;
+
 // Walk one opening snapshot of each log. A destination failure ends the pass.
 ExportResult exportLogs(const std::filesystem::path& root, const CheckpointStore& checkpoints,
-                        const BatchSender& send, std::ostream& warnings);
+                        const BatchSender& send, const DiagnosticReporter& report);
 
 }

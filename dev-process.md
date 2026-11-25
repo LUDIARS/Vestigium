@@ -45,5 +45,5 @@ process.on('SIGTERM', async () => {
 
 ## ログ自分自身
 
-Vestigium 自身は `pino` の default で stderr に warning を吐く程度。 自前
-JSONL ファイルは作らない (chicken & egg)。
+ライブラリの警告は stderr に出す。C++ sink の走査診断は stderr と
+[宛先ごとの診断 JSONL](spec/feature/victorialogs-sink.md#再開とローテーション) に記録する。

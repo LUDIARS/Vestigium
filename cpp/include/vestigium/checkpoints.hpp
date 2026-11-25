@@ -16,6 +16,9 @@ public:
     CheckpointStore(const CheckpointStore&) = delete;
     CheckpointStore& operator=(const CheckpointStore&) = delete;
 
+    // Keep per-destination diagnostics beside the cursors protected by this store.
+    [[nodiscard]] const std::filesystem::path& directory() const noexcept { return directory_; }
+
     // Read a legacy-compatible byte cursor, or return zero when absent.
     [[nodiscard]] std::uint64_t load(const std::string& key) const;
     // Flush a replacement cursor before making it visible at its final path.

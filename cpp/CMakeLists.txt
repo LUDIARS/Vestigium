@@ -26,7 +26,7 @@ target_link_libraries(vestigium_sink_core PUBLIC portus::portus PRIVATE Lorica::
 lorica_harden_target(vestigium_sink_core)
 
 if(WIN32)
-    target_sources(vestigium_sink_core PRIVATE src/checkpoints.cpp src/export.cpp src/source_identity.cpp)
+    target_sources(vestigium_sink_core PRIVATE src/checkpoints.cpp src/diagnostics.cpp src/export.cpp src/source_identity.cpp)
     add_executable(vestigium-sink src/main.cpp)
     target_link_libraries(vestigium-sink PRIVATE vestigium_sink_core)
     set_target_properties(vestigium-sink PROPERTIES CXX_EXTENSIONS OFF)

@@ -33,6 +33,18 @@
       ]
     },
     {
+      "file": "cpp/src/diagnostics.cpp",
+      "standard": "c++23",
+      "includes": [
+        "cpp/include",
+        "cpp/src"
+      ],
+      "packages": [
+        "portus-6eacf37",
+        "lorica"
+      ]
+    },
+    {
       "file": "cpp/src/export.cpp",
       "standard": "c++23",
       "includes": [

@@ -1,4 +1,5 @@
 #ifdef _WIN32
+#include "diagnostics.hpp"
 #include "vestigium/export.hpp"
 #include "vestigium/victoria_http.hpp"
 
@@ -68,20 +69,23 @@ Options parseOptions(int count, wchar_t* const* args) {
 int run(const Options& options) {
     const auto endpoint = vestigium::createInsertUrl(options.origin);
     const vestigium::CheckpointStore checkpoints(options.root, options.origin);
+    const auto report = [&checkpoints](const vestigium::ExportDiagnostic& diagnostic) {
+        vestigium::recordDiagnostic(checkpoints.directory(), diagnostic);
+    };
     const auto send = [&endpoint](std::string body) {
         vestigium::sendBatch(endpoint, std::move(body));
     };
     constexpr auto interval = std::chrono::seconds{5};
     for (;;) {
         try {
-            const auto result = vestigium::exportLogs(options.root, checkpoints, send, std::cerr);
+            const auto result = vestigium::exportLogs(options.root, checkpoints, send, report);
             if (result.rows != 0 || !options.watch) {
                 std::cout << "rows=" << result.rows << " failed_files=" << result.failedFiles << '\n' << std::flush;
             }
             if (!options.watch) return result.failedFiles == 0 ? 0 : 1;
         } catch (const std::exception& error) {
-            if (!options.watch) throw;
-            std::cerr << "[vestigium-sink] " << error.what() << '\n';
+            report({"scan_failed", options.root, error.what()});
+            if (!options.watch) return 1;
         }
         std::this_thread::sleep_for(interval);
     }
