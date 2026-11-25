@@ -122,14 +122,18 @@ MCP server は Concordia 同梱:
 
 ## VictoriaLogs への書き出し
 
-サービスと Augur の JSONL を取り込む場合は `npx vestigium sink --url <origin> --logs-dir <path>` を使う。継続実行には `--watch` を指定する。設定、再送、Windows 用 VictoriaLogs の導入手順は [書き出し仕様](./spec/feature/victorialogs-sink.md) を参照。
+サービスと Augur の JSONL を取り込む場合は Windows x64 用の `vestigium-sink.exe --url <origin> --logs-dir <path>` を使う。継続実行には `--watch` を指定する。設定、再送、Windows 用 VictoriaLogs の導入手順は [書き出し仕様](./spec/feature/victorialogs-sink.md) を参照。
 
-Excubitor で運用する前に、Vestigium 本体 checkout（`${ARS_ROOT}/Vestigium`）で次を実行する。`--include=dev` は `NODE_ENV=production` の環境でも TypeScript などの開発依存を導入する。
+Excubitor のビルド環境に Visual Studio 2026 の C++23 ツールチェーン、CMake 4.2 以上と Portus が使う OpenSSL 3 を用意する。Lorica 0.1 を CMake の `--install --prefix <prefix>` で配置し、`<prefix>` を Excubitor プロセスが継承する `CMAKE_PREFIX_PATH` に加える。`find_package(Lorica)` はこのプレフィックス配下の `LoricaConfig.cmake` を探す。OpenSSL が標準の検索場所にない場合は、そのインストール先も `CMAKE_PREFIX_PATH` に加える。
 
-```sh
-npm ci --include=dev --no-audit --no-fund
-npm run build
+Excubitor で運用する前に、Vestigium 本体 checkout（`${ARS_ROOT}/Vestigium`）で catalog と同じ構成をビルドする。
+
+```powershell
+cmake -S cpp -B .local/sink-build -G "Visual Studio 18 2026" -A x64 -DBUILD_TESTING=OFF -DPORTUS_SOURCE_DIR="$env:ARS_ROOT/Portus/cpp"
+cmake --build .local/sink-build --config Release --target vestigium-sink
 ```
+
+実行ファイルは `.local/sink-build/Release/vestigium-sink.exe` に作られる。OpenSSL を共有ライブラリとしてリンクした環境では、Excubitor の実行環境から対応する DLL を参照できるようにする。
 
 ## ライセンス
 

@@ -9,7 +9,7 @@
         "cpp/src"
       ],
       "packages": [
-        "portus-142d69e",
+        "portus-6eacf37",
         "lorica"
       ]
     },
@@ -21,7 +21,34 @@
         "cpp/src"
       ],
       "packages": [
-        "portus-142d69e"
+        "portus-6eacf37"
+      ]
+    },
+    {
+      "file": "cpp/src/checkpoints.cpp",
+      "standard": "c++23",
+      "includes": [
+        "cpp/include",
+        "cpp/src"
+      ]
+    },
+    {
+      "file": "cpp/src/export.cpp",
+      "standard": "c++23",
+      "includes": [
+        "cpp/include",
+        "cpp/src"
+      ],
+      "packages": [
+        "portus-6eacf37"
+      ]
+    },
+    {
+      "file": "cpp/src/main.cpp",
+      "standard": "c++23",
+      "includes": [
+        "cpp/include",
+        "cpp/src"
       ]
     },
     {
@@ -32,8 +59,19 @@
         "cpp/src"
       ],
       "packages": [
-        "portus-142d69e",
+        "portus-6eacf37",
         "lorica"
+      ]
+    },
+    {
+      "file": "cpp/src/source_identity.cpp",
+      "standard": "c++23",
+      "includes": [
+        "cpp/include",
+        "cpp/src"
+      ],
+      "packages": [
+        "portus-6eacf37"
       ]
     },
     {
@@ -44,7 +82,7 @@
         "cpp/src"
       ],
       "packages": [
-        "portus-142d69e"
+        "portus-6eacf37"
       ]
     },
     {
@@ -55,7 +93,7 @@
         "cpp/src"
       ],
       "packages": [
-        "portus-142d69e"
+        "portus-6eacf37"
       ]
     },
     {
@@ -66,8 +104,19 @@
         "cpp/src"
       ],
       "packages": [
-        "portus-142d69e",
+        "portus-6eacf37",
         "lorica"
+      ]
+    },
+    {
+      "file": "cpp/tests/export_test.cpp",
+      "standard": "c++23",
+      "includes": [
+        "cpp/include",
+        "cpp/src"
+      ],
+      "packages": [
+        "portus-6eacf37"
       ]
     },
     {
@@ -78,7 +127,7 @@
         "cpp/src"
       ],
       "packages": [
-        "portus-142d69e"
+        "portus-6eacf37"
       ]
     }
   ]

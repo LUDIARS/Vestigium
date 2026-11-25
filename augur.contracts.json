@@ -21,6 +21,15 @@
       "module": "cpp/src/service_record.contract.hpp",
       "mode": "observe",
       "sample": 1
+    },
+    {
+      "id": "C-3",
+      "criterion": "C-3 resetCheckpoint(store, key): 切り詰め検出後は確定位置を 0 に保存して先頭から再開する",
+      "symbol": "vestigium::resetCheckpoint",
+      "file": "cpp/src/export.cpp",
+      "module": "cpp/src/reset_checkpoint.contract.hpp",
+      "mode": "observe",
+      "sample": 1
     }
   ]
 }

@@ -3,6 +3,7 @@ dist/
 *.log
 logs/
 .local/victorialogs/
+.local/sink-build/
 .vitest-tmp/
 .DS_Store
 

@@ -22,13 +22,13 @@ std::string createInsertUrl(const std::string& origin) { return ::augur::invoke_
     return url.origin() + "/insert/jsonline?_time_field=_time&_msg_field=_msg&_stream_fields=service%2Ckind";
 }, origin); /* augur-inject:contract-end:74411a57 */ }
 
-void sendBatch(const std::string& origin, std::string body) {
+void sendBatch(const std::string& endpoint, std::string body) {
     portus::FetchRequest request;
     request.method = "POST";
     request.headers = {{"content-type", "application/stream+json"}};
     request.body = std::move(body);
     request.timeout_ms = 15'000;
-    const auto response = portus::fetch(createInsertUrl(origin), request);
+    const auto response = portus::fetch(endpoint, request);
     if (!response.ok()) throw std::runtime_error("VictoriaLogs returned HTTP " + std::to_string(response.status));
 }
 
