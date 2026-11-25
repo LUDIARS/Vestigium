@@ -26,7 +26,7 @@ services:
     repo: LUDIARS/Vestigium
     runtime: node
     cwd: ${ARS_ROOT}/Vestigium
-    build_command: 'cmake -S cpp -B .local/sink-build -G "Visual Studio 18 2026" -A x64 -DBUILD_TESTING=OFF -DPORTUS_SOURCE_DIR="${ARS_ROOT}/Portus/cpp" && cmake --build .local/sink-build --config Release --target vestigium-sink'
+    build_command: 'cmake -S cpp -B .local/sink-build -G "Visual Studio 18 2026" -A x64 -DBUILD_TESTING=OFF -DPORTUS_SOURCE_DIR="${ARS_ROOT}/Portus/cpp" -DCMAKE_PREFIX_PATH="${ARS_ROOT}/.toolchains/lorica-7972dea;C:/Program Files/OpenSSL-Win64" && cmake --build .local/sink-build --config Release --target vestigium-sink'
     command: '".local/sink-build/Release/vestigium-sink.exe" --watch --logs-dir "${ARS_ROOT}/logs"'
     depends_on: [victorialogs]
     required_env: [VESTIGIUM_VICTORIALOGS_URL]

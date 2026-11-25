@@ -126,6 +126,8 @@ MCP server は Concordia 同梱:
 
 Excubitor のビルド環境に Visual Studio 2026 の C++23 ツールチェーン、CMake 4.2 以上と Portus が使う OpenSSL 3 を用意する。Lorica 0.1 を CMake の `--install --prefix <prefix>` で配置し、`<prefix>` を Excubitor プロセスが継承する `CMAKE_PREFIX_PATH` に加える。`find_package(Lorica)` はこのプレフィックス配下の `LoricaConfig.cmake` を探す。OpenSSL が標準の検索場所にない場合は、そのインストール先も `CMAKE_PREFIX_PATH` に加える。
 
+本社の拠点では、Lorica 0.1 (Lorica 7972dea) を `${ARS_ROOT}/.toolchains/lorica-7972dea` に、OpenSSL 3 を `C:/Program Files/OpenSSL-Win64` に置いている。Excubitor の `vestigium-sink` の build_command は、この 2 つを `-DCMAKE_PREFIX_PATH` で CMake に渡す。置き場所が違う拠点では catalog の値を合わせる。
+
 Excubitor で運用する前に、Vestigium 本体 checkout（`${ARS_ROOT}/Vestigium`）で catalog と同じ構成をビルドする。
 
 ```powershell
