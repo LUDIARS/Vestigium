@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "native": [
+    {
+      "file": "cpp/src/batch.cpp",
+      "standard": "c++23",
+      "includes": [
+        "cpp/include",
+        "cpp/src"
+      ],
+      "packages": [
+        "portus-142d69e",
+        "lorica"
+      ]
+    },
+    {
+      "file": "cpp/src/checkpoint_key.cpp",
+      "standard": "c++23",
+      "includes": [
+        "cpp/include",
+        "cpp/src"
+      ],
+      "packages": [
+        "portus-142d69e"
+      ]
+    },
+    {
+      "file": "cpp/src/record.cpp",
+      "standard": "c++23",
+      "includes": [
+        "cpp/include",
+        "cpp/src"
+      ],
+      "packages": [
+        "portus-142d69e",
+        "lorica"
+      ]
+    },
+    {
+      "file": "cpp/src/sources.cpp",
+      "standard": "c++23",
+      "includes": [
+        "cpp/include",
+        "cpp/src"
+      ],
+      "packages": [
+        "portus-142d69e"
+      ]
+    },
+    {
+      "file": "cpp/src/timestamp.cpp",
+      "standard": "c++23",
+      "includes": [
+        "cpp/include",
+        "cpp/src"
+      ],
+      "packages": [
+        "portus-142d69e"
+      ]
+    },
+    {
+      "file": "cpp/src/victoria_http.cpp",
+      "standard": "c++23",
+      "includes": [
+        "cpp/include",
+        "cpp/src"
+      ],
+      "packages": [
+        "portus-142d69e",
+        "lorica"
+      ]
+    },
+    {
+      "file": "cpp/tests/sink_test.cpp",
+      "standard": "c++23",
+      "includes": [
+        "cpp/include",
+        "cpp/src"
+      ],
+      "packages": [
+        "portus-142d69e"
+      ]
+    }
+  ]
+}

@@ -1,7 +1,5 @@
 import { parseLogRecord } from '../util/jsonl.js';
 import type { LogSource } from './sources.js';
-import { contract } from './contracts/runtime.js'; /* augur-inject:import:5899136c */
-import augurContract_1d5e9114 from './contracts/service-record.contract.js'; /* augur-inject:contract-predicate:1e4c0c4e */
 
 export const VICTORIA_STREAM_FIELDS = 'service,kind';
 
@@ -33,8 +31,6 @@ export function resolveServiceAliases(row: Record<string, unknown>): { time: str
     : typeof row.event === 'string' ? row.event : row.message;
   return time && typeof msg === 'string' ? { time, msg } : undefined;
 }
-// @ts-expect-error augur-inject
-resolveServiceAliases = contract(resolveServiceAliases, { ...augurContract_1d5e9114, contractId: 'C-2', mode: 'observe', sample: 1, where: 'src/sink/record.ts:25', rule: 'contract-wrap', id: '1d5e9114' }); /* augur-inject:contract-wrap:1d5e9114 */
 
 function formatServiceRecord(row: Record<string, unknown>, source: LogSource) {
   if (row.service !== source.service) return undefined;

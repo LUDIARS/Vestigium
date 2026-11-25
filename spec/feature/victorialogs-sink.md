@@ -39,3 +39,11 @@ Excubitor の catalog は `127.0.0.1:9428`、データ領域 `.local/victorialog
 - C-1 createInsertUrl(origin): VictoriaLogs の JSONL 挿入先に時刻、本文、低カーディナリティのストリームフィールドを指定する
 - C-2 resolveServiceAliases(row): サービスログの ts・timestamp・time と msg・event・message を優先順に解決し、必要な値を欠く行を読み飛ばす
 - HTTP 失敗後の再送、成功後の再走査と日次 rename、UTF-8 の部分行、入力ファイルの保持を回帰テストで確認する。
+
+## C++ 版への移行
+
+C++ 版の処理は、配備済み Portus の HTTP・JSON・SHA-256 と、インストール済み Lorica を使う。ビルドには VS 2026 の C++23 と CMake 4.2 以上を使う。CMake に `PORTUS_SOURCE_DIR` で Portus の `cpp/` の場所を指定し、`CMAKE_PREFIX_PATH` で Lorica のインストール先を指定する。設定・ビルド時に依存の取得処理は行わない。送信時の通信先は設定された VictoriaLogs の HTTP(S) オリジンのみで、認証情報付き URL を拒否し、応答のリダイレクトには従わない。
+
+先行実装では、入力の探索、行の変換、改行単位のバッチ、宛先とファイルのキー計算、挿入リクエストを提供する。チェックポイントのファイル名は、Node の Windows ファイル統計と同じ `dev:ino:birthtimeNs` の UTF-8 を SHA-256 で表現する。ファイル統計は読み取りと同じハンドルから取得し、既存の Node チェックポイントと実ファイルで照合してから切り替える。
+
+稼働中のファイルを rename 可能な共有モードで開き、同じハンドルの Windows ファイル ID と生成時刻を取得し、位置指定で読み込む汎用 API は Portus 側で用意する。これを利用する実行ファイルで、正常な応答の後にのみ既存形式のカーソルを更新する。配備切り替えは、その実行ファイルが完成してから Excubitor catalog と既存 CLI を同じ変更で切り替える。

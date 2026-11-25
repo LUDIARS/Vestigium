@@ -5,6 +5,7 @@
   "templateRules": [],
   "membership": [
     { "pathPattern": "^src/sink/(?:.*/)?[^/]+$" },
+    { "pathPattern": "^cpp/" },
     { "pathPattern": "^excubitor\\.catalog\\.yaml$" },
     { "pathPattern": "^augur\\.(contracts|inject)\\.json$" }
   ]

@@ -1,24 +1,24 @@
 {
   "version": 1,
-  "contractsDir": "src/sink/contracts",
-  "importFrom": "./contracts/runtime.js",
-  "runtimeFile": "src/sink/contracts/runtime.ts",
+  "contractsDir": "cpp/src",
+  "importFrom": "augur/contract_runtime.hpp",
+  "runtimeFile": "cpp/src/augur/contract_runtime.hpp",
   "contracts": [
     {
       "id": "C-1",
       "criterion": "C-1 createInsertUrl(origin): VictoriaLogs の JSONL 挿入先に時刻、本文、低カーディナリティのストリームフィールドを指定する",
-      "symbol": "createInsertUrl",
-      "file": "src/sink/victoria-http.ts",
-      "module": "src/sink/contracts/insert-url.contract.ts",
+      "symbol": "vestigium::createInsertUrl",
+      "file": "cpp/src/victoria_http.cpp",
+      "module": "cpp/src/insert_url.contract.hpp",
       "mode": "observe",
       "sample": 1
     },
     {
       "id": "C-2",
       "criterion": "C-2 resolveServiceAliases(row): サービスログの ts・timestamp・time と msg・event・message を優先順に解決し、必要な値を欠く行を読み飛ばす",
-      "symbol": "resolveServiceAliases",
-      "file": "src/sink/record.ts",
-      "module": "src/sink/contracts/service-record.contract.ts",
+      "symbol": "vestigium::resolveServiceAliases",
+      "file": "cpp/src/record.cpp",
+      "module": "cpp/src/service_record.contract.hpp",
       "mode": "observe",
       "sample": 1
     }

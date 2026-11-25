@@ -1,6 +1,4 @@
 import { VICTORIA_STREAM_FIELDS } from './record.js';
-import { contract } from './contracts/runtime.js'; /* augur-inject:import:aa05a1c4 */
-import augurContract_9820de45 from './contracts/insert-url.contract.js'; /* augur-inject:contract-predicate:a0bebd1e */
 
 export function createInsertUrl(origin: string): URL {
   const url = new URL(origin);
@@ -14,8 +12,6 @@ export function createInsertUrl(origin: string): URL {
   url.searchParams.set('_stream_fields', VICTORIA_STREAM_FIELDS);
   return url;
 }
-// @ts-expect-error augur-inject
-createInsertUrl = contract(createInsertUrl, { ...augurContract_9820de45, contractId: 'C-1', mode: 'observe', sample: 1, where: 'src/sink/victoria-http.ts:3', rule: 'contract-wrap', id: '9820de45' }); /* augur-inject:contract-wrap:9820de45 */
 
 export function createVictoriaSender(url: URL): (body: string) => Promise<void> {
   return async (body) => {
