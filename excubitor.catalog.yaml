@@ -17,3 +17,20 @@ services:
       url: http://127.0.0.1:9428/health
     provides:
       VESTIGIUM_VICTORIALOGS_URL: http://127.0.0.1:${port}
+
+  - code: vestigium-sink
+    name: Vestigium VictoriaLogs sink
+    tier: infra
+    project_code: vestigium
+    component: worker
+    repo: LUDIARS/Vestigium
+    runtime: node
+    cwd: ${ARS_ROOT}/Vestigium
+    build_command: npm run build
+    command: 'node dist/cli/vestigium.js sink --watch --logs-dir "${ARS_ROOT}/logs"'
+    depends_on: [victorialogs]
+    required_env: [VESTIGIUM_VICTORIALOGS_URL]
+    autostart: false
+    restart_policy: on-failure
+    health:
+      type: process

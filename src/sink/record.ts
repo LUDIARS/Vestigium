@@ -1,5 +1,7 @@
-import { parse } from '../util/jsonl.js';
+import { parseLogRecord } from '../util/jsonl.js';
 import type { LogSource } from './sources.js';
+import { contract } from './contracts/runtime.js'; /* augur-inject:import:5899136c */
+import augurContract_1d5e9114 from './contracts/service-record.contract.js'; /* augur-inject:contract-predicate:1e4c0c4e */
 
 export const VICTORIA_STREAM_FIELDS = 'service,kind';
 
@@ -22,25 +24,46 @@ function contractLevel(msg: string): string {
   return 'info';
 }
 
+export function resolveServiceAliases(row: Record<string, unknown>): { time: string; msg: string } | undefined {
+  const timestamp = typeof row.timestamp === 'string' ? row.timestamp : undefined;
+  const alternateTime = typeof row.time === 'string' ? row.time : undefined;
+  const time = (typeof row.ts === 'number' ? instant(row.ts) : undefined)
+    ?? instant(timestamp) ?? instant(alternateTime);
+  const msg = typeof row.msg === 'string' ? row.msg
+    : typeof row.event === 'string' ? row.event : row.message;
+  return time && typeof msg === 'string' ? { time, msg } : undefined;
+}
+// @ts-expect-error augur-inject
+resolveServiceAliases = contract(resolveServiceAliases, { ...augurContract_1d5e9114, contractId: 'C-2', mode: 'observe', sample: 1, where: 'src/sink/record.ts:25', rule: 'contract-wrap', id: '1d5e9114' }); /* augur-inject:contract-wrap:1d5e9114 */
+
+function formatServiceRecord(row: Record<string, unknown>, source: LogSource) {
+  if (row.service !== source.service) return undefined;
+  let record = parseLogRecord(row);
+  let time = instant(record?.ts);
+  if (!time) {
+    const aliases = resolveServiceAliases(row);
+    if (!aliases) return undefined;
+    time = aliases.time;
+    record = parseLogRecord(row, Date.parse(time), aliases.msg);
+  }
+  if (!record) return undefined;
+  return {
+    service: source.service, kind: source.kind, _time: time, _msg: record.msg, level: record.level,
+    channel: record.channel, pid: record.pid, ctx: record.ctx,
+  };
+}
+
 export function formatRecord(line: string, source: LogSource): string | undefined {
   const fields = { service: source.service, kind: source.kind };
-  if (source.kind === 'service') {
-    const record = parse(line);
-    const time = instant(record?.ts);
-    if (!record || !time || record.service !== source.service) return undefined;
-    return JSON.stringify({
-      ...fields, _time: time, _msg: record.msg, level: record.level,
-      channel: record.channel, pid: record.pid, ctx: record.ctx,
-    });
-  }
-
   let record: unknown;
   try {
-    record = JSON.parse(line);
+    record = JSON.parse(source.kind === 'service' ? line.trim() : line);
   } catch {
     return undefined;
   }
-  if (!isRecord(record) || typeof record.msg !== 'string') return undefined;
+  if (!isRecord(record)) return undefined;
+  if (source.kind === 'service') return JSON.stringify(formatServiceRecord(record, source));
+  if (typeof record.msg !== 'string') return undefined;
   const ctx = isRecord(record.ctx) ? record.ctx : {};
   const time = instant(ctx.observed_at) ?? instant(record.time) ?? instant(record.ts);
   if (!time) return undefined;

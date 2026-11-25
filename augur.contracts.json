@@ -12,6 +12,15 @@
       "module": "src/sink/contracts/insert-url.contract.ts",
       "mode": "observe",
       "sample": 1
+    },
+    {
+      "id": "C-2",
+      "criterion": "C-2 resolveServiceAliases(row): サービスログの ts・timestamp・time と msg・event・message を優先順に解決し、必要な値を欠く行を読み飛ばす",
+      "symbol": "resolveServiceAliases",
+      "file": "src/sink/record.ts",
+      "module": "src/sink/contracts/service-record.contract.ts",
+      "mode": "observe",
+      "sample": 1
     }
   ]
 }

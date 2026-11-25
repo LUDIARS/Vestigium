@@ -1,5 +1,5 @@
 {
   "service": "vestigium",
-  "include": ["src/sink/victoria-http.ts"],
+  "include": ["src/sink/victoria-http.ts", "src/sink/record.ts"],
   "rules": { "contract-wrap": true }
 }

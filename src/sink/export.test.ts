@@ -92,6 +92,37 @@ describe('VictoriaLogs export', () => {
     expect(await run()).toEqual({ rows: 0, failedFiles: 0 });
   });
 
+  it('exports Revisor rows and resolves timestamp and message aliases in order', async () => {
+    const dir = path.join(root, 'revisor');
+    const timestamp = '2026-11-25T00:00:14.283Z';
+    const time = '2026-11-25T09:00:15+09:00';
+    await mkdir(dir);
+    const rows = [
+      { timestamp, level: 'info', event: 'heartbeat' },
+      { ts, timestamp, time, msg: 'native', event: 'unused', message: 'unused' },
+      { ts: 'invalid', timestamp, time, msg: null, event: 'preferred', message: 'unused' },
+      { timestamp: 'invalid', time, event: false, message: 'fallback', level: 'warn' },
+      { time: 123, event: 'no valid time' },
+      { timestamp, message: 123 },
+      { timestamp, event: 'wrong service', service: 'actio' },
+    ];
+    await writeFile(path.join(dir, '2026-11-25.jsonl'), rows
+      .map((row) => JSON.stringify({ service: 'revisor', ...row })).join('\n') + '\n');
+
+    expect(await run()).toEqual({ rows: 4, failedFiles: 0 });
+    const sent = send.mock.calls.flatMap(([body]) => body.trimEnd().split('\n')
+      .map((line) => JSON.parse(line)));
+    expect(sent).toMatchObject([
+      { _time: timestamp, _msg: 'heartbeat', service: 'revisor', kind: 'service', level: 'info', channel: 'app' },
+      { _time: new Date(ts).toISOString(), _msg: 'native' },
+      { _time: timestamp, _msg: 'preferred' },
+      { _time: '2026-11-25T00:00:15.000Z', _msg: 'fallback', level: 'warn' },
+    ]);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('skipped 3 invalid row(s)'));
+    expect(await run()).toEqual({ rows: 0, failedFiles: 0 });
+    expect(send).toHaveBeenCalledTimes(1);
+  });
+
   it('uses the expected HTTP fields and rejects non-success responses', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 503 }));
     vi.stubGlobal('fetch', fetchMock);

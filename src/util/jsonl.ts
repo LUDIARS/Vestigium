@@ -29,30 +29,27 @@ export function parse(line: string): LogRecord | null {
   const trimmed = line.trim();
   if (!trimmed) return null;
   try {
-    const obj = JSON.parse(trimmed) as unknown;
-    if (!obj || typeof obj !== 'object') return null;
-    const o = obj as Record<string, unknown>;
-    if (typeof o.ts !== 'number' || typeof o.service !== 'string' || typeof o.msg !== 'string') {
-      return null;
-    }
-    const level = (LOG_LEVELS as readonly string[]).includes(o.level as string)
-      ? (o.level as LogLevel)
-      : 'info';
-    const channel = (CHANNELS as readonly string[]).includes(o.channel as string)
-      ? (o.channel as Channel)
-      : 'app';
-    return {
-      ts: o.ts,
-      level,
-      service: o.service,
-      channel,
-      msg: o.msg,
-      pid: typeof o.pid === 'number' ? o.pid : undefined,
-      ctx: o.ctx && typeof o.ctx === 'object' ? (o.ctx as Record<string, unknown>) : undefined,
-    };
+    const value = JSON.parse(trimmed) as unknown;
+    return value && typeof value === 'object' ? parseLogRecord(value as Record<string, unknown>) : null;
   } catch {
     return null;
   }
+}
+
+export function parseLogRecord(
+  record: Record<string, unknown>, ts: unknown = record.ts, msg: unknown = record.msg,
+): LogRecord | null {
+  const { service, level, channel, pid, ctx } = record;
+  if (typeof ts !== 'number' || typeof service !== 'string' || typeof msg !== 'string') return null;
+  return {
+    ts,
+    service,
+    msg,
+    level: (LOG_LEVELS as readonly string[]).includes(level as string) ? level as LogLevel : 'info',
+    channel: (CHANNELS as readonly string[]).includes(channel as string) ? channel as Channel : 'app',
+    pid: typeof pid === 'number' ? pid : undefined,
+    ctx: ctx && typeof ctx === 'object' ? ctx as Record<string, unknown> : undefined,
+  };
 }
 
 function truncate(s: string, maxBytes: number): string {

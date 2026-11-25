@@ -124,6 +124,13 @@ MCP server は Concordia 同梱:
 
 サービスと Augur の JSONL を取り込む場合は `npx vestigium sink --url <origin> --logs-dir <path>` を使う。継続実行には `--watch` を指定する。設定、再送、Windows 用 VictoriaLogs の導入手順は [書き出し仕様](./spec/feature/victorialogs-sink.md) を参照。
 
+Excubitor で運用する前に、Vestigium 本体 checkout（`${ARS_ROOT}/Vestigium`）で次を実行する。`--include=dev` は `NODE_ENV=production` の環境でも TypeScript などの開発依存を導入する。
+
+```sh
+npm ci --include=dev --no-audit --no-fund
+npm run build
+```
+
 ## ライセンス
 
 UNLICENSED (LUDIARS 内部)。

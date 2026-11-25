@@ -8,11 +8,13 @@ Actio `actio:7b048979-f529-4936-bf65-031cb31327ea`
 
 | 入力パス | `service` | `kind` | `_time` |
 | --- | --- | --- | --- |
-| `<code>/YYYY-MM-DD.jsonl` | ディレクトリ名 | `service` | `ts`（epoch ms） |
+| `<code>/YYYY-MM-DD.jsonl` | ディレクトリ名 | `service` | `ts`（epoch ms）、`timestamp`、`time`（後二者は ISO 8601）の順で有効な時刻 |
 | `contracts.jsonl`、`archive/contracts-YYYY-MM-DD.jsonl` | `augur` | `contract` | `ctx.observed_at`、`time`、`ts` の順で有効な時刻 |
 | `contracts-actio-YYYY-MM-DD-<id>.jsonl` | `actio` | `contract` | Augur と同じ |
 
-正規化した UTF-8 JSONL を `POST /insert/jsonline` に送る。リクエストの設定は `_time_field=_time`、`_msg_field=_msg`、`_stream_fields=service,kind`。ISO UTC の時刻と `msg` を送り、レベル、チャネル、契約 ID（`ctx.contract` から `contract_id` に昇格）などは検索フィールドとする。共有 Augur ログは記録元サービスを一意に特定できないため `service=augur` とする。ログと既存の `ctx` を送るので、機微情報の除去は引き続き記録元が行う。認証情報付き URL や転送先からのリダイレクトは拒否する。配備時はローカル Excubitor catalog のループバック URL を使う。
+サービスログの本文は `msg`、`event`、`message` の順で最初の文字列を使う。行の `service` はディレクトリ名と一致させる。有効な時刻または本文を欠く行は診断して読み飛ばす。契約ログの本文は `msg` を使う。
+
+正規化した UTF-8 JSONL を `POST /insert/jsonline` に送る。リクエストの設定は `_time_field=_time`、`_msg_field=_msg`、`_stream_fields=service,kind`。時刻は UTC の ISO 8601 に統一する。レベル、チャネル、契約 ID（`ctx.contract` から `contract_id` に昇格）などは検索フィールドとする。共有 Augur ログは記録元サービスを一意に特定できないため `service=augur` とする。ログと既存の `ctx` を送るので、機微情報の除去は引き続き記録元が行う。認証情報付き URL や転送先からのリダイレクトは拒否する。配備時はローカル Excubitor catalog のループバック URL を使う。
 
 ## 再開とローテーション
 
@@ -28,7 +30,12 @@ Actio `actio:7b048979-f529-4936-bf65-031cb31327ea`
 
 Excubitor の catalog は `127.0.0.1:9428`、データ領域 `.local/victorialogs/data`、保持 7 日（`-retentionPeriod=7d`）を宣言する。設定のエクスポート・インポートを伴う拠点移行は別工程として扱う。起動の際はセットアップ済みの実行ファイルを Excubitor が直接実行する。明示的に起動するまで自動起動しない。
 
+`vestigium-sink` は VictoriaLogs に依存し、catalog の `provides` で注入される `VESTIGIUM_VICTORIALOGS_URL` に `${ARS_ROOT}/logs` から継続送信する。配備時は [README の手順](../../README.md) で本体 checkout をビルドし、VictoriaLogs の起動を確認してから Excubitor で `vestigium-sink` を起動する。初回の起動は運用担当者が行い、稼働中の異常終了は Excubitor が再起動する。定常運用はこのサービス一つに任せ、同じログルート・宛先を手動で扱う場合は管理下の sink が停止してから CLI を実行する。
+
+2026-11-25 の初回取り込みでは、`timestamp` と `event` を使う Revisor 行が旧版で不正行としてスキップされ、読み取り位置が進んだ。通常の再開は保存済み位置から始まる。遡及取り込みが必要な場合は、未送信と確認した保持期間内の Revisor 行だけを別の入力ルートの `revisor/YYYY-MM-DD.jsonl` に用意して送る。共有カーソルを初期化すると取り込み済みのログも再送される。
+
 ## 受け入れ条件
 
 - C-1 createInsertUrl(origin): VictoriaLogs の JSONL 挿入先に時刻、本文、低カーディナリティのストリームフィールドを指定する
+- C-2 resolveServiceAliases(row): サービスログの ts・timestamp・time と msg・event・message を優先順に解決し、必要な値を欠く行を読み飛ばす
 - HTTP 失敗後の再送、成功後の再走査と日次 rename、UTF-8 の部分行、入力ファイルの保持を回帰テストで確認する。
