@@ -120,6 +120,10 @@ MCP server は Concordia 同梱:
 提供 tool: `vestigium_list_services` / `vestigium_tail` /
 `vestigium_search` / `vestigium_recent_errors`。
 
+## VictoriaLogs への書き出し
+
+サービスと Augur の JSONL を取り込む場合は `npx vestigium sink --url <origin> --logs-dir <path>` を使う。継続実行には `--watch` を指定する。設定、再送、Windows 用 VictoriaLogs の導入手順は [書き出し仕様](./spec/feature/victorialogs-sink.md) を参照。
+
 ## ライセンス
 
 UNLICENSED (LUDIARS 内部)。

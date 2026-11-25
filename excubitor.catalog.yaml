@@ -1,0 +1,19 @@
+services:
+  - code: victorialogs
+    name: VictoriaLogs
+    tier: infra
+    project_code: vestigium
+    component: backend
+    port: 9428
+    repo: LUDIARS/Vestigium
+    # Excubitor executes the command directly for this runtime.
+    runtime: node
+    cwd: ${ARS_ROOT}/Vestigium
+    command: '".local/victorialogs/victoria-logs-windows-amd64-prod.exe" -httpListenAddr=127.0.0.1:9428 -storageDataPath=.local/victorialogs/data -retentionPeriod=7d -envflag.enable=false'
+    autostart: false
+    restart_policy: "no"
+    health:
+      type: http
+      url: http://127.0.0.1:9428/health
+    provides:
+      VESTIGIUM_VICTORIALOGS_URL: http://127.0.0.1:${port}

@@ -1,0 +1,11 @@
+{
+  "name": "log-export",
+  "description": "既存の JSONL ログを VictoriaLogs に書き出す処理と配備設定。",
+  "presetRules": [],
+  "templateRules": [],
+  "membership": [
+    { "pathPattern": "^src/sink/(?:.*/)?[^/]+$" },
+    { "pathPattern": "^excubitor\\.catalog\\.yaml$" },
+    { "pathPattern": "^augur\\.(contracts|inject)\\.json$" }
+  ]
+}

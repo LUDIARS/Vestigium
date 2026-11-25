@@ -2,6 +2,7 @@ node_modules/
 dist/
 *.log
 logs/
+.local/victorialogs/
 .vitest-tmp/
 .DS_Store
 

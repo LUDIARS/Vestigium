@@ -14,6 +14,7 @@ import { recent, search, listServices, lastSeenAt } from '../reader/recent.js';
 import { sweep } from '../rotator.js';
 import { resolveLogsDir } from '../util/paths.js';
 import type { LogLevel, LogRecord } from '../util/jsonl.js';
+import { runSink } from './sink.js';
 
 interface ParsedArgs {
   _: string[];
@@ -65,6 +66,16 @@ async function main(): Promise<void> {
     : undefined;
 
   switch (cmd) {
+    case 'sink': {
+      const url = args.flags.url ?? process.env.VESTIGIUM_VICTORIALOGS_URL;
+      if (typeof url !== 'string' || !url.trim() || args.flags['logs-dir'] === true
+          || typeof args.flags.watch === 'string' || args._.length > 1) {
+        fail('usage: vestigium sink --url <VictoriaLogs origin> [--watch] [--logs-dir <path>]');
+        return;
+      }
+      await runSink(url, logsDir, args.flags.watch === true);
+      break;
+    }
     case 'tail': {
       const svc = args._[1];
       if (!svc) { fail('usage: vestigium tail <service> [-n 200]'); return; }
@@ -156,6 +167,7 @@ Commands:
                                   print recent N lines (latest last)
   search <service>... --pattern <regex> [-n 200]
                                   cross-service search
+  sink --url <origin> [--watch]   export JSONL to VictoriaLogs
 
 Global flag: --logs-dir <path>   override VESTIGIUM_LOGS_DIR / cwd/logs
 `);

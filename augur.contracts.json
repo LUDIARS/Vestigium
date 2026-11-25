@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "contractsDir": "src/sink/contracts",
+  "importFrom": "./contracts/runtime.js",
+  "runtimeFile": "src/sink/contracts/runtime.ts",
+  "contracts": [
+    {
+      "id": "C-1",
+      "criterion": "C-1 createInsertUrl(origin): VictoriaLogs の JSONL 挿入先に時刻、本文、低カーディナリティのストリームフィールドを指定する",
+      "symbol": "createInsertUrl",
+      "file": "src/sink/victoria-http.ts",
+      "module": "src/sink/contracts/insert-url.contract.ts",
+      "mode": "observe",
+      "sample": 1
+    }
+  ]
+}
